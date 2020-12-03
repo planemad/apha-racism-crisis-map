@@ -13,13 +13,15 @@
     body {
       margin: 0;
     }
-    article{
-      margin:200px auto;
+
+    article {
+      margin: 200px auto;
       position: relative;
       width: 800px;
       border: 1px solid #eaeaea
     }
-    section{
+
+    section {
       position: relative;
     }
 
@@ -53,27 +55,29 @@
 
 <body>
 
- 
-<article >
-  <h1 class="page-title">Declarations of Racism as a Public Health Issue</h1>
-  <p>Topics & Issues
-    Health Equity
-    Racism and Health
-    Across the country, local and state leaders are declaring racism a public health crisis or emergency. These declarations are an important first step in the movement to advance racial equity and justice and must be followed by allocation of resources and strategic action.
-  </p>
 
-  <h4>Map of declarations</h2>
+  <article>
+    <h1 class="page-title">Declarations of Racism as a Public Health Issue</h1>
+    <p>Topics & Issues
+      Health Equity
+      Racism and Health
+      Across the country, local and state leaders are declaring racism a public health crisis or emergency. These
+      declarations are an important first step in the movement to advance racial equity and justice and must be followed
+      by allocation of resources and strategic action.
+    </p>
 
-  <section> 
-  <div id="map"></div>
-  <div id="map-filter">
-  </section>
+    <h4>Map of declarations</h2>
 
-  </div>
-  <div id="map-overlay">
-      Click location for resoltion details
-  </div>
-</article>
+      <section>
+        <div id="map"></div>
+        <div id="map-filter"></div>
+      </section>
+
+      </div>
+      <div id="map-overlay">
+        Click location for resoltion details
+      </div>
+  </article>
 
   <script>
     //
@@ -113,79 +117,6 @@
 
     function loadMapLayers() {
 
-      // filterPlaceLabels('US')
-
-      /*   map.setPaintProperty('land', 'background-color', '#f0f0f0')
-           map.setPaintProperty('water', 'fill-color', '#fff')
-           
-         map.setLayoutProperty('landcover', 'visibility', 'none');
-         map.setLayoutProperty('landuse', 'visibility', 'none');
-         map.setLayoutProperty('national-park', 'visibility', 'none');
-         */
-
-      /* map.addSource('boundaries-adm1', {
-          type: 'vector',
-          url: 'mapbox://mapbox.boundaries-adm1-v3'
-        });  */
-
-      /* map.addLayer({
-        'id': 'US states',
-        'type': 'fill',
-        'source': 'composite',
-        'source-layer': 'boundaries_admin_1',
-        'layout': {},
-        'paint': {
-          'fill-color': [
-            'case',
-            ['!=', null, ['feature-state', 'count']],
-            [
-              "interpolate",
-              ["linear"],
-              ["feature-state", "count"],
-              1,
-              "hsla(206, 98%, 45%,0)",
-              30,
-              "hsla(206, 98%, 45%,0)"
-            ],
-            "#444"
-          ],
-          'fill-opacity': [
-            'case',
-            ['boolean', ['feature-state', 'focus'], false],
-            1,
-            ['boolean', ['feature-state', 'hover'], false],
-            1,
-            0.8
-          ],
-          'fill-outline-color': [
-            'case',
-            ['boolean', ['feature-state', 'focus'], false],
-            'rgba(255,255,255,0.7)',
-            ['boolean', ['feature-state', 'hover'], false],
-            'rgba(255,255,255,0.4)',
-            'rgba(0,0,0,0)'
-          ]
-        },
-        'filter': ["all", [
-            "any",
-            [
-              "==",
-              "all",
-              ["get", "worldview"]
-            ],
-            [
-              "in",
-              "US",
-              ["get", "worldview"]
-            ]
-          ],
-          [
-            "==",
-            "US",
-            ["get", "iso_3166_1"]
-          ]
-        ]
-      },); */
 
       map.addLayer({
         'id': 'US states outline',
@@ -225,6 +156,28 @@
         ]
       });
 
+      map.setPaintProperty("US-states-fill", "fill-color", [
+        "case",
+        [
+          "!=",
+          null,
+          ["feature-state", "count"]
+        ],
+        [
+          "interpolate",
+          ["linear"],
+          [
+            "feature-state",
+            "count"
+          ],
+          1,
+          "#feffc9",
+          30,
+          "#ff9700"
+        ],
+        "#efefef"
+      ])
+
 
       // Location points
 
@@ -235,71 +188,6 @@
         clusterMaxZoom: 6,
         clusterRadius: 20
       });
-      /* 
-        map.addLayer({
-          id: 'clusters',
-          type: 'circle',
-          source: 'locations',
-          filter: ['has', 'point_count'],
-          paint: {
-            'circle-color': 'rgba(255,255,255,0)',
-            'circle-stroke-color': 'black',
-            'circle-stroke-width': 1,
-            'circle-radius': ["+",
-              ['*',['get', 'point_count'],0.5],
-              5
-            ]
-          }
-        }, 'waterway-label'); */
-
-      /*  map.addLayer({
-         id: 'unclustered-point',
-         type: 'circle',
-         source: 'locations',
-         filter: ['!', ['has', 'point_count']],
-         paint: {
-           'circle-color': 'black',
-           'circle-radius': 4,
-           'circle-blur': 0
-         }
-       });
-       map.addLayer({
-         id: 'unclustered-point highlight',
-         type: 'circle',
-         source: 'locations',
-         filter: ['!', ['has', 'point_count']],
-         paint: {
-           'circle-color': 'white',
-           'circle-radius': 3
-         }
-       });
-       map.addLayer({
-         id: 'unclustered-point label',
-         type: 'symbol',
-         source: 'locations',
-         'minzoom':6,
-         filter: ['!', ['has', 'point_count']],
-         paint: {
-           'text-color': 'black',
-           'text-halo-color': 'white',
-           'text-halo-width': 1
-         },
-         layout: {
-           'text-field': ['get', 'Entity'],
-           'text-anchor': 'bottom',
-           'text-size': [
-             "interpolate",
-             ["linear"],
-             ["zoom"],
-             5,
-             10,
-             16,
-             30
-           ],
-           'text-offset': [0, -0.6]
-         }
-       }); */
-
 
       // Load spreadsheet
 
@@ -331,9 +219,18 @@
             document.getElementById('map-filter').insertAdjacentHTML('beforeend', checkbox);
           })
 
+          // Aggregate rows by subtype
+          var subTypesData = d3.group(data, d => d["Sub-Type"])
+          subTypesData.forEach((d, i) => {
+            const checkbox =
+              `<input checked type="checkbox" id="${i}" name="${i}" value="${i}"><label for="${i}">${i} (${d.length})</label>`
+
+            document.getElementById('map-filter').insertAdjacentHTML('beforeend', checkbox);
+          })
+
 
           // Aggregate rows by state and join to boundaries
-          var statesData = d3.group(data, d => d.map_state_id)
+          var statesData = d3.group(data, d => d.State)
 
           // Iterate over entries for each state
           statesData.forEach((d, i) => {
@@ -341,12 +238,11 @@
             map.setFeatureState({
               'source': 'composite',
               'sourceLayer': 'boundaries_admin_1',
-              id: i
+              id: boundaries_us_adm1[i].boundary_id
             }, {
               count: d.length,
-              name: d[0].map_state_name
+              name: boundaries_us_adm1[i].name
             });
-
 
           })
 
@@ -560,23 +456,269 @@
     // Utility
     //
 
-    // Dim the place labels outside US
-    function filterPlaceLabels(iso) {
-      const placeLabelLayers = findLayers(map, function (layer) {
-        return layer['source-layer'] == 'place_label';
-      })
-
-      placeLabelLayers.forEach(l => {
-        map.setPaintProperty(l.id, 'text-opacity', ["case", ["==", ["get", "iso_3166_1"], iso], 0.5, 0.1])
-        map.setPaintProperty(l.id, 'icon-opacity', ["case", ["==", ["get", "iso_3166_1"], iso], 0.2, 0.1])
-      })
-    }
-
     // Returns an array of map style layers that match a given filter function
     function findLayers(map, filterFn) {
       return map.getStyle().layers.filter(layer => {
         return filterFn ? filterFn(layer) : layer;
       });
+    }
+
+    let boundaries_us_adm1 = {
+      "AL": {
+        "code": "AL",
+        "boundary_id": "70377",
+        "name": "Alabama"
+      },
+      "AK": {
+        "code": "AK",
+        "boundary_id": "135913",
+        "name": "Alaska"
+      },
+      "AZ": {
+        "code": "AZ",
+        "boundary_id": "201449",
+        "name": "Arizona"
+      },
+      "AR": {
+        "code": "AR",
+        "boundary_id": "266985",
+        "name": "Arkansas"
+      },
+      "CA": {
+        "code": "CA",
+        "boundary_id": "332521",
+        "name": "California"
+      },
+      "CO": {
+        "code": "CO",
+        "boundary_id": "398057",
+        "name": "Colorado"
+      },
+      "CT": {
+        "code": "CT",
+        "boundary_id": "463593",
+        "name": "Connecticut"
+      },
+      "DE": {
+        "code": "DE",
+        "boundary_id": "529129",
+        "name": "Delaware"
+      },
+      "DC": {
+        "code": "DC",
+        "boundary_id": "594665",
+        "name": "District of Columbia"
+      },
+      "FL": {
+        "code": "FL",
+        "boundary_id": "660201",
+        "name": "Florida"
+      },
+      "GA": {
+        "code": "GA",
+        "boundary_id": "725737",
+        "name": "Georgia"
+      },
+      "HI": {
+        "code": "HI",
+        "boundary_id": "791273",
+        "name": "Hawaii"
+      },
+      "ID": {
+        "code": "ID",
+        "boundary_id": "856809",
+        "name": "Idaho"
+      },
+      "IL": {
+        "code": "IL",
+        "boundary_id": "922345",
+        "name": "Illinois"
+      },
+      "IN": {
+        "code": "IN",
+        "boundary_id": "987881",
+        "name": "Indiana"
+      },
+      "IA": {
+        "code": "IA",
+        "boundary_id": "1053417",
+        "name": "Iowa"
+      },
+      "KS": {
+        "code": "KS",
+        "boundary_id": "1118953",
+        "name": "Kansas"
+      },
+      "KY": {
+        "code": "KY",
+        "boundary_id": "1184489",
+        "name": "Kentucky"
+      },
+      "LA": {
+        "code": "LA",
+        "boundary_id": "1250025",
+        "name": "Louisiana"
+      },
+      "ME": {
+        "code": "ME",
+        "boundary_id": "1315561",
+        "name": "Maine"
+      },
+      "MD": {
+        "code": "MD",
+        "boundary_id": "1381097",
+        "name": "Maryland"
+      },
+      "MA": {
+        "code": "MA",
+        "boundary_id": "1446633",
+        "name": "Massachusetts"
+      },
+      "MI": {
+        "code": "MI",
+        "boundary_id": "1512169",
+        "name": "Michigan"
+      },
+      "MN": {
+        "code": "MN",
+        "boundary_id": "1577705",
+        "name": "Minnesota"
+      },
+      "MS": {
+        "code": "MS",
+        "boundary_id": "1643241",
+        "name": "Mississippi"
+      },
+      "MO": {
+        "code": "MO",
+        "boundary_id": "1708777",
+        "name": "Missouri"
+      },
+      "MT": {
+        "code": "MT",
+        "boundary_id": "1774313",
+        "name": "Montana"
+      },
+      "NE": {
+        "code": "NE",
+        "boundary_id": "1839849",
+        "name": "Nebraska"
+      },
+      "NV": {
+        "code": "NV",
+        "boundary_id": "1905385",
+        "name": "Nevada"
+      },
+      "NH": {
+        "code": "NH",
+        "boundary_id": "1970921",
+        "name": "New Hampshire"
+      },
+      "NJ": {
+        "code": "NJ",
+        "boundary_id": "2036457",
+        "name": "New Jersey"
+      },
+      "NM": {
+        "code": "NM",
+        "boundary_id": "2101993",
+        "name": "New Mexico"
+      },
+      "NY": {
+        "code": "NY",
+        "boundary_id": "2167529",
+        "name": "New York"
+      },
+      "NC": {
+        "code": "NC",
+        "boundary_id": "2233065",
+        "name": "North Carolina"
+      },
+      "ND": {
+        "code": "ND",
+        "boundary_id": "2298601",
+        "name": "North Dakota"
+      },
+      "OH": {
+        "code": "OH",
+        "boundary_id": "2364137",
+        "name": "Ohio"
+      },
+      "OK": {
+        "code": "OK",
+        "boundary_id": "2429673",
+        "name": "Oklahoma"
+      },
+      "OR": {
+        "code": "OR",
+        "boundary_id": "2495209",
+        "name": "Oregon"
+      },
+      "PA": {
+        "code": "PA",
+        "boundary_id": "2560745",
+        "name": "Pennsylvania"
+      },
+      "RI": {
+        "code": "RI",
+        "boundary_id": "2626281",
+        "name": "Rhode Island"
+      },
+      "SC": {
+        "code": "SC",
+        "boundary_id": "2691817",
+        "name": "South Carolina"
+      },
+      "SD": {
+        "code": "SD",
+        "boundary_id": "2757353",
+        "name": "South Dakota"
+      },
+      "TN": {
+        "code": "TN",
+        "boundary_id": "2822889",
+        "name": "Tennessee"
+      },
+      "TX": {
+        "code": "TX",
+        "boundary_id": "2888425",
+        "name": "Texas"
+      },
+      "UT": {
+        "code": "UT",
+        "boundary_id": "2953961",
+        "name": "Utah"
+      },
+      "VT": {
+        "code": "VT",
+        "boundary_id": "3019497",
+        "name": "Vermont"
+      },
+      "VA": {
+        "code": "VA",
+        "boundary_id": "3085033",
+        "name": "Virginia"
+      },
+      "WA": {
+        "code": "WA",
+        "boundary_id": "3150569",
+        "name": "Washington"
+      },
+      "WV": {
+        "code": "WV",
+        "boundary_id": "3216105",
+        "name": "West Virginia"
+      },
+      "WI": {
+        "code": "WI",
+        "boundary_id": "3281641",
+        "name": "Wisconsin"
+      },
+      "WY": {
+        "code": "WY",
+        "boundary_id": "3347177",
+        "name": "Wyoming"
+      }
     }
   </script>
 
