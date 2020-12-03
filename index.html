@@ -1,0 +1,561 @@
+
+<head>
+   <script src="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css" rel="stylesheet" />
+    
+    <script src="https://unpkg.com/geojson@0.5.0/geojson.min.js"></script>
+    <script src="https://d3js.org/d3-dsv.v2.min.js"></script>
+<script src="https://d3js.org/d3-fetch.v2.min.js"></script>
+<script src="https://d3js.org/d3-array.v2.min.js"></script>
+
+<style>
+body {
+  margin: 0
+}
+
+#map {
+  height: 100vh;
+  width: 100%;
+}
+
+#map-filter {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  z-index: 10;
+  padding: 10px;
+  color:grey;
+}
+
+#map-overlay {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  z-index: 10;
+  padding: 10px;
+  color:black;
+  max-height:200px;
+  overflow:scroll;
+}
+
+
+</style>
+</head>
+<body>
+
+<script>
+//
+// Settings
+//
+
+// Map
+mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
+
+var map = new mapboxgl.Map({
+  container: 'map',
+  style: 'mapbox://styles/planemad/ckgd3vmjp17yp19s927o8bior',
+  center: [-100, 40],
+  zoom: 3,
+  hash: true
+});
+
+// Spreadsheet
+var sheetId = "1syyiY3LnE_RgAQmvhGqwBFM_eky_E2gbHjisGLDvUd0";
+var sheetName = "All";
+var sheetData = null;
+
+//
+//  Map logic
+//
+
+map.on("load", function() {
+
+  loadMapLayers();
+  addMapInteractions();
+
+});
+
+//
+// Map style
+//
+
+function loadMapLayers() {
+
+  // filterPlaceLabels('US')
+
+/*   map.setPaintProperty('land', 'background-color', '#f0f0f0')
+     map.setPaintProperty('water', 'fill-color', '#fff')
+     
+   map.setLayoutProperty('landcover', 'visibility', 'none');
+   map.setLayoutProperty('landuse', 'visibility', 'none');
+   map.setLayoutProperty('national-park', 'visibility', 'none');
+   */
+
+/* map.addSource('boundaries-adm1', {
+    type: 'vector',
+    url: 'mapbox://mapbox.boundaries-adm1-v3'
+  });  */
+
+  /* map.addLayer({
+    'id': 'US states',
+    'type': 'fill',
+    'source': 'composite',
+    'source-layer': 'boundaries_admin_1',
+    'layout': {},
+    'paint': {
+      'fill-color': [
+        'case',
+        ['!=', null, ['feature-state', 'count']],
+        [
+          "interpolate",
+          ["linear"],
+          ["feature-state", "count"],
+          1,
+          "hsla(206, 98%, 45%,0)",
+          30,
+          "hsla(206, 98%, 45%,0)"
+        ],
+        "#444"
+      ],
+      'fill-opacity': [
+        'case',
+        ['boolean', ['feature-state', 'focus'], false],
+        1,
+        ['boolean', ['feature-state', 'hover'], false],
+        1,
+        0.8
+      ],
+      'fill-outline-color': [
+        'case',
+        ['boolean', ['feature-state', 'focus'], false],
+        'rgba(255,255,255,0.7)',
+        ['boolean', ['feature-state', 'hover'], false],
+        'rgba(255,255,255,0.4)',
+        'rgba(0,0,0,0)'
+      ]
+    },
+    'filter': ["all", [
+        "any",
+        [
+          "==",
+          "all",
+          ["get", "worldview"]
+        ],
+        [
+          "in",
+          "US",
+          ["get", "worldview"]
+        ]
+      ],
+      [
+        "==",
+        "US",
+        ["get", "iso_3166_1"]
+      ]
+    ]
+  },); */
+  
+  map.addLayer({
+    'id': 'US states outline',
+    'type': 'line',
+    'source': 'composite',
+    'source-layer': 'boundaries_admin_1',
+    'layout': {},
+    'paint': {
+    'line-width':0.5,
+      'line-color': [
+        'case',
+        ['boolean', ['feature-state', 'focus'], false],
+        "hsl(207, 64%, 58%)",
+        ['boolean', ['feature-state', 'hover'], false],
+        "hsl(207, 64%, 58%)",
+        'rgba(0,0,0,0)'
+      ]
+    },
+    'filter': ["all", [
+        "any",
+        [
+          "==",
+          "all",
+          ["get", "worldview"]
+        ],
+        [
+          "in",
+          "US",
+          ["get", "worldview"]
+        ]
+      ],
+      [
+        "==",
+        "US",
+        ["get", "iso_3166_1"]
+      ]
+    ]
+  });
+
+
+  // Location points
+
+  map.addSource('locations', {
+    type: 'geojson',
+    'data': null,
+    cluster: true,
+    clusterMaxZoom: 6,
+    clusterRadius: 20
+  });
+/* 
+  map.addLayer({
+    id: 'clusters',
+    type: 'circle',
+    source: 'locations',
+    filter: ['has', 'point_count'],
+    paint: {
+      'circle-color': 'rgba(255,255,255,0)',
+      'circle-stroke-color': 'black',
+      'circle-stroke-width': 1,
+      'circle-radius': ["+",
+        ['*',['get', 'point_count'],0.5],
+        5
+      ]
+    }
+  }, 'waterway-label'); */
+
+ /*  map.addLayer({
+    id: 'unclustered-point',
+    type: 'circle',
+    source: 'locations',
+    filter: ['!', ['has', 'point_count']],
+    paint: {
+      'circle-color': 'black',
+      'circle-radius': 4,
+      'circle-blur': 0
+    }
+  });
+  map.addLayer({
+    id: 'unclustered-point highlight',
+    type: 'circle',
+    source: 'locations',
+    filter: ['!', ['has', 'point_count']],
+    paint: {
+      'circle-color': 'white',
+      'circle-radius': 3
+    }
+  });
+  map.addLayer({
+    id: 'unclustered-point label',
+    type: 'symbol',
+    source: 'locations',
+    'minzoom':6,
+    filter: ['!', ['has', 'point_count']],
+    paint: {
+      'text-color': 'black',
+      'text-halo-color': 'white',
+      'text-halo-width': 1
+    },
+    layout: {
+      'text-field': ['get', 'Entity'],
+      'text-anchor': 'bottom',
+      'text-size': [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        5,
+        10,
+        16,
+        30
+      ],
+      'text-offset': [0, -0.6]
+    }
+  }); */
+
+
+  // Load spreadsheet
+
+  loadSheetData();
+
+}
+
+
+function loadSheetData() {
+
+  d3.csv(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`)
+    .then(function(data) {
+
+      sheetData = data;
+
+      // Convert rows into a geojson and add as points
+      const geojson = GeoJSON.parse(data, {
+        Point: ['Latitude', 'Longitude']
+      });
+
+      map.getSource('locations').setData(geojson)
+
+      // Aggregate rows by type
+      var typesData = d3.group(data, d => d.Type)
+      typesData.forEach((d, i) => {
+        const checkbox = `<input checked type="checkbox" id="${i}" name="${i}" value="${i}"><label for="${i}">${i} (${d.length})</label>`
+
+        document.getElementById('map-filter').insertAdjacentHTML('beforeend',checkbox);
+      })
+
+
+      // Aggregate rows by state and join to boundaries
+      var statesData = d3.group(data, d => d.map_state_id)
+      
+      // Iterate over entries for each state
+      statesData.forEach((d, i) => {
+
+        map.setFeatureState({
+          'source': 'composite',
+          'sourceLayer': 'boundaries_admin_1',
+          id: i
+        }, {
+          count: d.length,
+          name: d[0].map_state_name
+        });
+
+
+      })
+
+    })
+}
+
+//
+// Interactions
+//
+
+const hoverPopup = new mapboxgl.Popup({
+  closeButton: false,
+  closeOnClick: false,
+  offset: {
+    "top": [0, 10],
+    "bottom": [0, -10]
+  }
+});
+
+function addMapInteractions() {
+
+
+  map.on('mousemove', 'US-states-fill', createStatePopup);
+  map.on('mouseleave', 'US-states-fill', removeStatePopup);
+
+
+  // inspect a cluster on click
+  /*   map.on('click', 'clusters', function(e) {
+      var features = map.queryRenderedFeatures(e.point, {
+        layers: ['clusters']
+      });
+      var clusterId = features[0].properties.cluster_id;
+      map.getSource('locations').getClusterExpansionZoom(
+        clusterId,
+        function(err, zoom) {
+          if (err) return;
+    
+          map.easeTo({
+            center: features[0].geometry.coordinates,
+            zoom: zoom
+          });
+        }
+      );
+    }); */
+  map.on('click', 'locations', createLocationPopup)
+
+  map.on('click', 'US-states-fill', focusState);
+
+}
+
+var hoverId = null;
+
+function createStatePopup(e) {
+
+  map.getCanvas().style.cursor = 'pointer';
+
+  if (e.features.length > 0) {
+    if (hoverId) {
+      map.setFeatureState({
+        'source': 'composite',
+        'sourceLayer': 'boundaries_admin_1',
+        id: hoverId
+      }, {
+        hover: false
+      });
+    }
+    hoverId = e.features[0].id;
+    map.setFeatureState({
+      'source': 'composite',
+      'sourceLayer': 'boundaries_admin_1',
+      id: hoverId
+    }, {
+      hover: true
+    });
+  }
+
+
+  var coordinates = e.lngLat;
+
+  // Ensure that if the map is zoomed out such that multiple
+  // copies of the feature are visible, the popup appears
+  // over the copy being pointed to.
+  while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+  }
+
+  // Populate the popup and set its coordinates
+  // based on the feature found.
+
+  hoverPopup.remove();
+  hoverPopup
+    .setLngLat(coordinates)
+    .setHTML(statePopupHTML(e.features[0]))
+    .addTo(map);
+}
+
+function removeStatePopup() {
+  map.getCanvas().style.cursor = '';
+  hoverPopup.remove();
+
+  if (hoverId) {
+    map.setFeatureState({
+      'source': 'composite',
+      'sourceLayer': 'boundaries_admin_1',
+      id: hoverId
+    }, {
+      hover: false
+    });
+  }
+  hoverId = null;
+
+}
+
+var focusId = null;
+
+function focusState(e) {
+
+
+  if (e.features.length > 0) {
+
+
+    if (focusId) {
+      map.setFeatureState({
+        'source': 'composite',
+        'sourceLayer': 'boundaries_admin_1',
+        id: focusId
+      }, {
+        focus: false
+      });
+    }
+    focusId = e.features[0].id;
+    map.setFeatureState({
+      'source': 'composite',
+      'sourceLayer': 'boundaries_admin_1',
+      id: focusId
+    }, {
+      focus: true
+    });
+
+
+  }
+
+  // If joined data exists
+  if (e.features[0].state.hasOwnProperty('name')) {
+
+    map.easeTo({
+      center: e.lngLat,
+      zoom: 6.1
+    })
+
+    // Populate map overlay
+    const rows = sheetData.filter(d => d.map_state_id == e.features[0].id)
+
+    var description = `<h3>${e.features[0].state.name}</h3>`;
+    description += '<ul>';
+    rows.forEach(d => description += `<li>${d.Entity}</li>`)
+    description += '</ul>';
+    document.getElementById('map-overlay').innerHTML = description;
+
+  } else {
+    document.getElementById('map-overlay').innerHTML = 'No resolutions recorded in state';
+  }
+
+
+}
+
+function createLocationPopup(e) {
+
+  var coordinates = e.lngLat;
+
+  // Ensure that if the map is zoomed out such that
+  // multiple copies of the feature are visible, the
+  // popup appears over the copy being pointed to.
+  while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+  }
+
+  new mapboxgl.Popup()
+    .setLngLat(coordinates)
+    .setHTML(locationPopupHTML(e.features[0]))
+    .addTo(map);
+
+}
+
+function statePopupHTML(feature) {
+
+  var description;
+
+  if (feature.state.hasOwnProperty('name')) {
+    description = `<h3>${feature.state.name}</h3>`;
+    description += `<p><b>${feature.state.count}</b> resolutions on record</p>`;
+  } else {
+    description = 'No resolutions on record'
+  }
+  return description;
+}
+
+function locationPopupHTML(feature) {
+
+  var description;
+
+  description = `<h3>${feature.properties.Entity}<br><small>${feature.properties.map_state_name}</small></h3>`;
+  description += ``;
+  description += `<p><a href='${feature.properties.Link}'>Resolutions</a> passed</p>`;
+
+  return description;
+}
+
+
+//
+// Utility
+//
+
+// Dim the place labels outside US
+function filterPlaceLabels(iso) {
+  const placeLabelLayers = findLayers(map, function(layer) {
+    return layer['source-layer'] == 'place_label';
+  })
+
+  placeLabelLayers.forEach(l => {
+    map.setPaintProperty(l.id, 'text-opacity', ["case", ["==", ["get", "iso_3166_1"], iso], 0.5, 0.1])
+    map.setPaintProperty(l.id, 'icon-opacity', ["case", ["==", ["get", "iso_3166_1"], iso], 0.2, 0.1])
+  })
+}
+
+// Returns an array of map style layers that match a given filter function
+function findLayers(map, filterFn) {
+  return map.getStyle().layers.filter(layer => {
+    return filterFn ? filterFn(layer) : layer;
+  });
+}
+
+
+</script>
+
+<div id="map"></div>
+<div id="map-filter">
+
+</div>
+<div id="map-overlay">
+  <h2>
+  Resolutions declaring racism as a public health issue
+  </h2>
+</div>
+</body>
