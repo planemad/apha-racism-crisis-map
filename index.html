@@ -1,6 +1,7 @@
 <head>
   <script src="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css" rel="stylesheet" />
+  <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
 
   <link href="app.css" rel="stylesheet" />
 
@@ -33,22 +34,13 @@
 
     #map-filter {
       position: absolute;
-      top: 10px;
+      top: 0;
       left: 0;
       z-index: 10;
       padding: 10px;
       color: grey;
-    }
-
-    #map-overlay {
-      position: absolute;
-      bottom: 20px;
-      left: 0;
-      z-index: 10;
-      padding: 10px;
-      color: black;
-      max-height: 200px;
-      overflow: scroll;
+      background-color: aliceblue;
+      width: 100%;
     }
   </style>
 </head>
@@ -58,22 +50,20 @@
 
   <article>
     <h1 class="page-title">Declarations of Racism as a Public Health Issue</h1>
-    <p>Topics & Issues
-      Health Equity
-      Racism and Health
-      Across the country, local and state leaders are declaring racism a public health crisis or emergency. These
+    <p>Across the country, local and state leaders are declaring racism a public health crisis or emergency. These
       declarations are an important first step in the movement to advance racial equity and justice and must be followed
       by allocation of resources and strategic action.
     </p>
 
-    <h4>Map of declarations</h2>
+    <h4>Map of declaring institutions</h2>
 
       <section>
         <div id="map"></div>
-        <div id="map-filter"></div>
+        <div id="map-filter">
+        </div>
+
       </section>
 
-      </div>
       <div id="map-overlay">
         Click location for resoltion details
       </div>
@@ -91,9 +81,16 @@
       container: 'map',
       style: 'mapbox://styles/planemad/ckgd3vmjp17yp19s927o8bior',
       center: [-100, 40],
-      zoom: 3,
-      hash: true
+      zoom: 2
     });
+
+    // Define map bounds 
+    var bounds = [
+      [-200, -10], // [west, south]
+      [-30, 80] // [east, north]
+    ];
+    // Set the map's max bounds.
+    map.setMaxBounds(bounds);
 
     // Spreadsheet
     var sheetId = "1syyiY3LnE_RgAQmvhGqwBFM_eky_E2gbHjisGLDvUd0";
@@ -183,11 +180,30 @@
 
       map.addSource('locations', {
         type: 'geojson',
-        'data': null,
-        cluster: true,
-        clusterMaxZoom: 6,
-        clusterRadius: 20
+        'data': null
       });
+
+      let styleLayers = map.getStyle().layers;
+
+      map.setLayoutProperty("locations", "visibility", "none")
+      map.setLayoutProperty("locations-label", "visibility", "none")
+
+      let layer, addLayer;
+
+      layer = styleLayers.filter(d => d.id == "locations")[0]
+      addLayer = Object.assign(layer, {
+        id: "locations-circle"
+      })
+      map.addLayer(addLayer)
+
+      layer = styleLayers.filter(d => d.id == "locations-label")[0]
+      addLayer = Object.assign(layer, {
+        id: "locations-labels"
+      })
+      map.addLayer(addLayer)
+
+
+
 
       // Load spreadsheet
 
@@ -210,6 +226,11 @@
 
           map.getSource('locations').setData(geojson)
 
+          var bbox = turf.bbox(geojson);
+          map.fitBounds(bbox, {
+            padding: 50
+          });
+
           // Aggregate rows by type
           var typesData = d3.group(data, d => d.Type)
           typesData.forEach((d, i) => {
@@ -218,6 +239,8 @@
 
             document.getElementById('map-filter').insertAdjacentHTML('beforeend', checkbox);
           })
+
+          document.getElementById('map-filter').insertAdjacentHTML('beforeend', "<br>");
 
           // Aggregate rows by subtype
           var subTypesData = d3.group(data, d => d["Sub-Type"])
@@ -299,6 +322,7 @@
 
       map.getCanvas().style.cursor = 'pointer';
 
+
       if (e.features.length > 0) {
         if (hoverId) {
           map.setFeatureState({
@@ -331,12 +355,15 @@
 
       // Populate the popup and set its coordinates
       // based on the feature found.
-
       hoverPopup.remove();
-      hoverPopup
-        .setLngLat(coordinates)
-        .setHTML(statePopupHTML(e.features[0]))
-        .addTo(map);
+      if (statePopupHTML(e.features[0]) !== "none") {
+
+        hoverPopup
+          .setLngLat(coordinates)
+          .setHTML(statePopupHTML(e.features[0]))
+          .addTo(map);
+      }
+
     }
 
     function removeStatePopup() {
@@ -396,14 +423,14 @@
         // Populate map overlay
         const rows = sheetData.filter(d => d.map_state_id == e.features[0].id)
 
-        var description = `<h3>${e.features[0].state.name}</h3>`;
+        var description = `<b>${e.features[0].state.name}</b>`;
         description += '<ul>';
         rows.forEach(d => description += `<li>${d.Entity}</li>`)
         description += '</ul>';
         document.getElementById('map-overlay').innerHTML = description;
 
       } else {
-        document.getElementById('map-overlay').innerHTML = 'No resolutions recorded in state';
+        // document.getElementById('map-overlay').innerHTML = 'No resolutions recorded in state';
       }
 
 
@@ -435,7 +462,7 @@
         description = `<h3>${feature.state.name}</h3>`;
         description += `<p><b>${feature.state.count}</b> resolutions on record</p>`;
       } else {
-        description = 'No resolutions on record'
+        description = 'none'
       }
       return description;
     }
