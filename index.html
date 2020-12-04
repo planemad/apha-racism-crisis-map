@@ -55,11 +55,15 @@
       by allocation of resources and strategic action.
     </p>
 
-    <h4>Map of declaring institutions</h2>
+    <h4>Map of declarations passed</h2>
 
       <section>
         <div id="map"></div>
         <div id="map-filter">
+          <div id="filter">
+          </div>
+          <div id="subfilter">
+          </div>
         </div>
 
       </section>
@@ -93,9 +97,9 @@
     map.setMaxBounds(bounds);
 
     // Spreadsheet
-    var sheetId = "1syyiY3LnE_RgAQmvhGqwBFM_eky_E2gbHjisGLDvUd0";
-    var sheetName = "All";
-    var sheetData = null;
+    let sheetId = "1syyiY3LnE_RgAQmvhGqwBFM_eky_E2gbHjisGLDvUd0";
+    let sheetName = "All";
+    let sheetData = null;
 
     //
     //  Map logic
@@ -183,27 +187,12 @@
         'data': null
       });
 
+
+      setLayerSource("~locations", "locations")
+
+
       let styleLayers = map.getStyle().layers;
-
-      map.setLayoutProperty("locations", "visibility", "none")
-      map.setLayoutProperty("locations-label", "visibility", "none")
-
-      let layer, addLayer;
-
-      layer = styleLayers.filter(d => d.id == "locations")[0]
-      addLayer = Object.assign(layer, {
-        id: "locations-circle"
-      })
-      map.addLayer(addLayer)
-
-      layer = styleLayers.filter(d => d.id == "locations-label")[0]
-      addLayer = Object.assign(layer, {
-        id: "locations-labels"
-      })
-      map.addLayer(addLayer)
-
-
-
+      console.log(styleLayers)
 
       // Load spreadsheet
 
@@ -228,29 +217,37 @@
 
           var bbox = turf.bbox(geojson);
           map.fitBounds(bbox, {
-            padding: 50
+            padding: 80
           });
 
           // Aggregate rows by type
           var typesData = d3.group(data, d => d.Type)
-          typesData.forEach((d, i) => {
-            const checkbox =
-              `<input checked type="checkbox" id="${i}" name="${i}" value="${i}"><label for="${i}">${i} (${d.length})</label>`
 
-            document.getElementById('map-filter').insertAdjacentHTML('beforeend', checkbox);
+          const radio =
+            `<input checked type="radio" id="All" name="filter" value="All" onchange="updateSubfilter()"><label for="All">All levels(${data.length})</label>`
+
+          document.getElementById('filter').insertAdjacentHTML('beforeend', radio);
+
+          typesData.forEach((d, i) => {
+            const radio =
+              `<input type="radio" id="${i}" name="filter" value="${i}" onchange="updateSubfilter()"><label for="${i}">${i} (${d.length})</label>`
+
+            document.getElementById('filter').insertAdjacentHTML('beforeend', radio);
           })
 
-          document.getElementById('map-filter').insertAdjacentHTML('beforeend', "<br>");
+          document.getElementById('subfilter').insertAdjacentHTML('beforeend', "<br>Institution type<br>");
 
           // Aggregate rows by subtype
           var subTypesData = d3.group(data, d => d["Sub-Type"])
           subTypesData.forEach((d, i) => {
             const checkbox =
-              `<input checked type="checkbox" id="${i}" name="${i}" value="${i}"><label for="${i}">${i} (${d.length})</label>`
+              `<input checked type="checkbox" id="${i}" name="subfilter" value="${i}"><label for="${i}">${i} (${d.length})</label>`
 
-            document.getElementById('map-filter').insertAdjacentHTML('beforeend', checkbox);
+            document.getElementById('subfilter').insertAdjacentHTML('beforeend', checkbox);
           })
 
+          // Updates the map using the selected filter
+          filterData()
 
           // Aggregate rows by state and join to boundaries
           var statesData = d3.group(data, d => d.State)
@@ -273,7 +270,86 @@
     }
 
     //
-    // Interactions
+    // Filter interface
+    //
+
+    function updateSubfilter() {
+
+      let category = document.querySelector('input[name="filter"]:checked').value;
+
+      let categoryTypeData = sheetData.filter(d => category == "All" ? true : d.Type == category)
+
+      document.getElementById('subfilter').innerHTML = `<br>${category} institution type<br>`
+
+      // Aggregate rows by subtype
+      var subTypesData = d3.group(categoryTypeData, d => d["Sub-Type"])
+      subTypesData.forEach((d, i) => {
+        const checkbox =
+          `<input checked type="checkbox" id="${i}" name="subfilter" value="${i}" onchange="filterData()"><label for="${i}">${i} (${d.length})</label>`
+
+        document.getElementById('subfilter').insertAdjacentHTML('beforeend', checkbox);
+      })
+
+      filterData();
+
+    }
+
+    function filterData() {
+
+      // Get the current filter values
+      let type = document.querySelector('input[name="filter"]:checked').value;
+      let subtypes = [];
+      document.querySelectorAll('input[name="subfilter"]:checked').forEach(d => subtypes.push(d.value));
+
+      let layerOpacity = [
+        "case",
+        ["all", [
+            "match",
+            ["get", "Type"],
+            [type],
+            true,
+            type == "All" ? true : false
+          ],
+          [
+            "match",
+            ["get", "Sub-Type"],
+            subtypes,
+            true,
+            false
+          ]
+        ],
+        1,
+        0.2
+      ]
+      map.setPaintProperty("locations", "circle-opacity", layerOpacity)
+      map.setPaintProperty("locations-label", "text-opacity", layerOpacity)
+
+      let layerSortkey = [
+        "case",
+        ["all", [
+            "match",
+            ["get", "Type"],
+            [type],
+            true,
+            type == "All" ? true : false
+          ],
+          [
+            "match",
+            ["get", "Sub-Type"],
+            subtypes,
+            true,
+            false
+          ]
+        ],
+        1,
+        99
+      ]
+      map.setLayoutProperty("locations-label", "symbol-sort-key", layerSortkey)
+
+    }
+
+    //
+    // Map Interactions
     //
 
     const hoverPopup = new mapboxgl.Popup({
@@ -287,31 +363,11 @@
 
     function addMapInteractions() {
 
-
       map.on('mousemove', 'US-states-fill', createStatePopup);
       map.on('mouseleave', 'US-states-fill', removeStatePopup);
 
-
-      // inspect a cluster on click
-      /*   map.on('click', 'clusters', function(e) {
-          var features = map.queryRenderedFeatures(e.point, {
-            layers: ['clusters']
-          });
-          var clusterId = features[0].properties.cluster_id;
-          map.getSource('locations').getClusterExpansionZoom(
-            clusterId,
-            function(err, zoom) {
-              if (err) return;
-        
-              map.easeTo({
-                center: features[0].geometry.coordinates,
-                zoom: zoom
-              });
-            }
-          );
-        }); */
+      map.on('click', 'locations', createLocationPopup)
       map.on('click', 'locations-label', createLocationPopup)
-
       map.on('click', 'US-states-fill', focusState);
 
     }
@@ -321,7 +377,6 @@
     function createStatePopup(e) {
 
       map.getCanvas().style.cursor = 'pointer';
-
 
       if (e.features.length > 0) {
         if (hoverId) {
@@ -343,7 +398,6 @@
         });
       }
 
-
       var coordinates = e.lngLat;
 
       // Ensure that if the map is zoomed out such that multiple
@@ -363,7 +417,6 @@
           .setHTML(statePopupHTML(e.features[0]))
           .addTo(map);
       }
-
     }
 
     function removeStatePopup() {
@@ -387,9 +440,7 @@
 
     function focusState(e) {
 
-
       if (e.features.length > 0) {
-
 
         if (focusId) {
           map.setFeatureState({
@@ -408,8 +459,6 @@
         }, {
           focus: true
         });
-
-
       }
 
       // If joined data exists
@@ -438,6 +487,8 @@
 
     function createLocationPopup(e) {
 
+      console.log(e.features)
+
       var coordinates = e.lngLat;
 
       // Ensure that if the map is zoomed out such that
@@ -448,7 +499,7 @@
       }
 
       new mapboxgl.Popup()
-        .setLngLat(coordinates)
+        .setLngLat(e.features[0].geometry.coordinates)
         .setHTML(locationPopupHTML(e.features[0]))
         .addTo(map);
 
@@ -459,7 +510,7 @@
       var description;
 
       if (feature.state.hasOwnProperty('name')) {
-        description = `<h3>${feature.state.name}</h3>`;
+        description = `<b>${feature.state.name}</b>`;
         description += `<p><b>${feature.state.count}</b> resolutions on record</p>`;
       } else {
         description = 'none'
@@ -489,6 +540,37 @@
         return filterFn ? filterFn(layer) : layer;
       });
     }
+
+    // Set layer source
+    function setLayerSource(layerId, sourceId) {
+
+      let styleLayers = map.getStyle().layers;
+
+      styleLayers.forEach((layer, idx) => {
+
+        // Find template layer ids that begin with ~
+        if (layer.id.includes(layerId)) {
+
+          // Hide the template layer
+          map.setLayoutProperty(layer.id, "visibility", "none")
+
+          // Copy the layer properties and update the source
+          let addLayer = Object.assign(layer, {
+            id: layer.id.substring(1),
+            source: sourceId
+          })
+          delete addLayer["source-layer"]
+
+          // Add layer at the same position
+          map.addLayer(addLayer, "~" + layer.id)
+        }
+      })
+
+    }
+
+    //
+    // Data
+    //
 
     let boundaries_us_adm1 = {
       "AL": {
