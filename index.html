@@ -114,8 +114,8 @@
     map.setMaxBounds(bounds);
 
     // Spreadsheet
-    // let sheetId = "1eaU9tGMa7xwGGb6wpDP3T7w7Gw23NnLHGl4YoLILiHg";
-    // let sheetName = "All";
+    let sheetId = "1eaU9tGMa7xwGGb6wpDP3T7w7Gw23NnLHGl4YoLILiHg";
+    let sheetName = "All";
 
     let sheetData = null;
     filteredData = null;
@@ -240,10 +240,10 @@
 
     function loadSheetData() {
 
-      // d3.text(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`)
+      // console.log(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`)
       d3.text(`https://docs.google.com/spreadsheets/d/e/2PACX-1vRkLVhZFb2K0K9LWxxrZujKaGP1qcpsbZ9gCtAfM6eHGZuNa_qxBHwKpSPYfAiPSoMChphBJsMd4o7Z/pub?gid=1592883182&single=true&output=csv`)
         .then(function (data) {
-
+          
           // data = d3.csvParse(data)
           data = d3.csvParse(data.split('\n').slice(5).join('\n'))
 
