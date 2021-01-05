@@ -41,6 +41,18 @@
       width: 100%;
     }
 
+.filter h6{
+  margin-right: 10px;
+}
+    .filter{
+      display: flex;
+      flex-direction: row; 
+      align-items: center;
+    }
+    .filter input{
+      margin:inherit;
+    }
+
     #map-overlay {
       position: absolute;
       top: 150px;
@@ -51,6 +63,7 @@
       background-color: rgba(240, 248, 255, 0.76);
       width: 30%;
     }
+
   </style>
 </head>
 
@@ -58,7 +71,7 @@
 
 
   <article>
-    <h1 class="page-title">Declarations of Racism as a Public Health Issue</h1>
+    <h1 class="page-title">Declarations of Racism as a Public Health Crisis</h1>
     <p>Across the country, local and state leaders are declaring racism a public health crisis or emergency. These
       declarations are an important first step in the movement to advance racial equity and justice and must be followed
       by allocation of resources and strategic action.
@@ -72,9 +85,10 @@
         <div id="map"></div>
 
         <div id="map-filter">
-          <div id="filter">
+          <div id="filter" class="filter">
           </div>
-          <div id="subfilter">
+          <hr>
+          <div id="subfilter" class="filter">
           </div>
         </div>
 
@@ -198,39 +212,12 @@
         "#efefef"
       ])
 
-      // // Create legend
-      // var log = d3.scaleLog()
-      //   .domain([0.1, 100, 1000])
-      //   .range(["rgb(46, 73, 123)", "rgb(71, 187, 94)"]);
-
-      // var svg = d3.select("svg");
-
-      // svg.append("g")
-      //   .attr("class", "legendLog")
-      //   .attr("transform", "translate(20,20)");
-
-      // var logLegend = d3.legendColor()
-      //   .cells([0.1, 5, 10, 50, 100, 500, 1000])
-      //   .scale(log);
-
-      // (function () {
-      //   svg.select(".legend")
-      //     .call(logLegend);
-
-      // })();
-
-
-
-
       // Location points
 
       map.addSource('locations', {
         type: 'geojson',
         'data': null
       });
-
-      // Replace source in these style layers with the geojson
-      setLayerSource("~locations", "locations")
 
       // Load spreadsheet
       loadSheetData();
@@ -243,7 +230,7 @@
       // console.log(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`)
       d3.text(`https://docs.google.com/spreadsheets/d/e/2PACX-1vRkLVhZFb2K0K9LWxxrZujKaGP1qcpsbZ9gCtAfM6eHGZuNa_qxBHwKpSPYfAiPSoMChphBJsMd4o7Z/pub?gid=1592883182&single=true&output=csv`)
         .then(function (data) {
-          
+
           // data = d3.csvParse(data)
           data = d3.csvParse(data.split('\n').slice(5).join('\n'))
 
@@ -257,6 +244,9 @@
             Point: ['Latitude', 'Longitude']
           });
 
+          // Replace source in these style layers with the geojson
+          setLayerSource("~locations", "locations")
+
           map.getSource('locations').setData(geojson)
 
           var bbox = turf.bbox(geojson);
@@ -264,23 +254,25 @@
             padding: 100
           });
 
+          document.getElementById('filter').insertAdjacentHTML('beforeend', '<h6>Filter by institution type:</h6>');
+
           // Aggregate rows by type
           var typesData = d3.group(data, d => d.Type)
 
           const radio =
-            `<input checked type="radio" id="All" name="filter" value="All" onchange="updateSubfilter()"><label for="All">All levels (${data.length})</label>`
+            `<input checked type="radio" id="All" name="filter" value="All" onchange="updateSubfilters()"><label for="All">All levels (${data.length})</label>`
 
           document.getElementById('filter').insertAdjacentHTML('beforeend', radio);
 
           typesData.forEach((d, i) => {
             const radio =
-              `<input type="radio" id="${i}" name="filter" value="${i}" onchange="updateSubfilter()"><label for="${i}">${i} (${d.length})</label>`
+              `<input type="radio" id="${i}" name="filter" value="${i}" onchange="updateSubfilters()"><label for="${i}">${i} (${d.length})</label>`
 
             document.getElementById('filter').insertAdjacentHTML('beforeend', radio);
           })
 
           // Updates the map using the selected filter
-          updateSubfilter()
+          updateSubfilters()
 
         })
     }
@@ -289,13 +281,13 @@
     // Filter interface
     //
 
-    function updateSubfilter() {
+    function updateSubfilters() {
 
       let category = document.querySelector('input[name="filter"]:checked').value;
 
       let categoryTypeData = sheetData.filter(d => category == "All" ? true : d.Type == category)
 
-      document.getElementById('subfilter').innerHTML = `<br>${category} institution types:<br>`
+      document.getElementById('subfilter').innerHTML = ``
 
       // Aggregate rows by subtype
       var subTypesData = d3.group(categoryTypeData, d => d["Sub-Type"])
@@ -315,32 +307,36 @@
       // Get the current filter values
       let type = document.querySelector('input[name="filter"]:checked').value;
       let subtypes = [];
-      document.querySelectorAll('input[name="subfilter"]:checked').forEach(d => subtypes.push(d.value));
+      document.querySelectorAll('input[name="subfilter"]:checked').forEach(d => subtypes.push(d.value))
 
       subtypes = subtypes.length ? subtypes : ["None"]
 
-      let layerOpacity = [
-        "case",
-        ["all", [
+      let layerFilter = ["all",
+        [
           "match",
           ["get", "Type"],
           [type],
           true,
           type == "All" ? true : false
         ],
-          [
-            "match",
-            ["get", "Sub-Type"],
-            subtypes,
-            true,
-            false
-          ]
-        ],
-        1,
-        0.2
+        [
+          "match",
+          ["get", "Sub-Type"],
+          subtypes,
+          true,
+          false
+        ]
       ]
+
+      let layerOpacity = [
+        "case",
+        layerFilter,
+        1,
+        0.1
+      ]
+
       map.setPaintProperty("locations", "circle-opacity", layerOpacity)
-      map.setPaintProperty("locations-label", "text-opacity", layerOpacity)
+      
 
       let layerSortkey = [
         "case",
@@ -362,6 +358,8 @@
         1,
         99
       ]
+
+      map.setFilter("locations-label", layerFilter)
       map.setLayoutProperty("locations-label", "symbol-sort-key", layerSortkey)
 
       // Update choropleth
