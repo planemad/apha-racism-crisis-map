@@ -1,0 +1,52 @@
+code,boundary_id,name
+AL,70377,Alabama
+AK,135913,Alaska
+AZ,201449,Arizona
+AR,266985,Arkansas
+CA,332521,California
+CO,398057,Colorado
+CT,463593,Connecticut
+DE,529129,Delaware
+DC,594665,District of Columbia
+FL,660201,Florida
+GA,725737,Georgia
+HI,791273,Hawaii
+ID,856809,Idaho
+IL,922345,Illinois
+IN,987881,Indiana
+IA,1053417,Iowa
+KS,1118953,Kansas
+KY,1184489,Kentucky
+LA,1250025,Louisiana
+ME,1315561,Maine
+MD,1381097,Maryland
+MA,1446633,Massachusetts
+MI,1512169,Michigan
+MN,1577705,Minnesota
+MS,1643241,Mississippi
+MO,1708777,Missouri
+MT,1774313,Montana
+NE,1839849,Nebraska
+NV,1905385,Nevada
+NH,1970921,New Hampshire
+NJ,2036457,New Jersey
+NM,2101993,New Mexico
+NY,2167529,New York
+NC,2233065,North Carolina
+ND,2298601,North Dakota
+OH,2364137,Ohio
+OK,2429673,Oklahoma
+OR,2495209,Oregon
+PA,2560745,Pennsylvania
+RI,2626281,Rhode Island
+SC,2691817,South Carolina
+SD,2757353,South Dakota
+TN,2822889,Tennessee
+TX,2888425,Texas
+UT,2953961,Utah
+VT,3019497,Vermont
+VA,3085033,Virginia
+WA,3150569,Washington
+WV,3216105,West Virginia
+WI,3281641,Wisconsin
+WY,3347177,Wyoming
