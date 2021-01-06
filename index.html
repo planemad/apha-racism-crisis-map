@@ -31,6 +31,7 @@
       height: 70vh;
       width: 70%;
       float: right;
+      border-left: 1px solid #bbb39e;
     }
 
     #map-filter {
@@ -74,21 +75,28 @@
       align-items: center;
     }
 
-    .filter input {
+    .filter input, .filter label{
       margin: inherit;
+      float: right;
     }
 
     #map-overlay {
       position: absolute;
-      margin-left: 30%;
-      top: 0;
-      padding: 5px;
+      top: 1px;
+      right:1px;
+      padding: 10px;
       background-color: rgba(255, 255, 255, 0.6);
-      width: 70%
+      max-width: 70%
     }
 
-    #map-overlay div {
+    #map-overlay span {
       float: right;
+      display: inline-flex;
+    }
+    #legend span {
+      margin: 0 10px;
+      height:15px;
+      width:100px;
     }
 
     #map-side-panel {
@@ -97,13 +105,14 @@
     }
 
     #map-side-panel select {
-      margin: 0;
+      margin: 5px 0;
       border: none;
       background-color: white;
       border-bottom: 2px solid;
       font-weight: bold;
       padding: 15px 0;
-      height: inherit;
+      height: auto;
+      font-size:large;
     }
 
     #declarations {
@@ -136,10 +145,6 @@
 
       <h4>Map of declarations</h2>
 
-        <div class="legend">
-        </div>
-
-
         <div id="map-filter">
           <div id="filter" class="filter">
           </div>
@@ -150,9 +155,9 @@
         <div style='position:relative'>
           <div id="map"></div>
           <div id="map-overlay" style="align-items: right">
-            <div id="identify"></div>
-            <div id="legend">
-            </div>
+            <span id="identify"></span>
+            <span id="legend">
+            </span>
           </div>
 
 
@@ -235,11 +240,18 @@
         'source-layer': 'boundaries_admin_1',
         'layout': {},
         'paint': {
-          'line-width': 0.5,
+          'line-width': [
+            'case',
+            ['boolean', ['feature-state', 'focus'], false],
+            2,
+            ['boolean', ['feature-state', 'hover'], false],
+            0.5,
+            0.5
+          ],
           'line-color': [
             'case',
             ['boolean', ['feature-state', 'focus'], false],
-            "hsl(207, 64%, 58%)",
+            "hsl(207, 64%, 40%)",
             ['boolean', ['feature-state', 'hover'], false],
             "hsl(207, 64%, 58%)",
             'rgba(0,0,0,0)'
@@ -264,7 +276,7 @@
             ["get", "iso_3166_1"]
           ]
         ]
-      });
+      },'~locations');
 
       buildLegend();
 
@@ -495,7 +507,7 @@
       const fillStyle = map.getPaintProperty("US-states-fill", "fill-color")[2]
       const colors = [fillStyle[4], fillStyle[6]]
       const range = [fillStyle[3], fillStyle[5]]
-      document.getElementById('legend').innerHTML = `States colored by declaration count: ${range[0]}<span style="background: linear-gradient(90deg, ${colors[0]} 0%, ${colors[1]} 100%);width:100px;height:10px;display:inline-block;margin:0 10px"></span>${range[1]}`
+      document.getElementById('legend').innerHTML = `States colored by declaration count: ${range[0]}<span style="background: linear-gradient(90deg, ${colors[0]} 0%, ${colors[1]} 100%)"></span>${range[1]}`
     }
 
     //
@@ -543,18 +555,18 @@
       // based on the feature found.
       if (statePopupHTML(e.features[0]) !== "none") {
         document.getElementById('identify').innerHTML = statePopupHTML(e.features[0]);
-        document.getElementById('legend').style.visibility = "hidden"
+        document.getElementById('legend').style.display = "none"
 
       } else {
         document.getElementById('identify').innerHTML = ""
-        document.getElementById('legend').style.visibility = "visible"
+        document.getElementById('legend').style.display = ""
       }
     }
 
     function removeStatePopup() {
       map.getCanvas().style.cursor = '';
       document.getElementById('identify').innerHTML = ""
-      document.getElementById('legend').style.visibility = "visible"
+      document.getElementById('legend').style.display = ""
 
       if (hoverBoundaryId) {
         map.setFeatureState({
@@ -599,7 +611,7 @@
         stateDropdown.value = e.features[0].state.code;
 
         map.fitBounds(statesLookup[e.features[0].state.code].bounds, {
-          padding: 20
+          padding: 100
         })
 
         // Populate map overlay
