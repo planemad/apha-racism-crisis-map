@@ -75,7 +75,8 @@
       align-items: center;
     }
 
-    .filter input, .filter label{
+    .filter input,
+    .filter label {
       margin: inherit;
       float: right;
     }
@@ -83,7 +84,7 @@
     #map-overlay {
       position: absolute;
       top: 1px;
-      right:1px;
+      right: 1px;
       padding: 10px;
       background-color: rgba(255, 255, 255, 0.6);
       max-width: 70%
@@ -93,10 +94,11 @@
       float: right;
       display: inline-flex;
     }
+
     #legend span {
       margin: 0 10px;
-      height:15px;
-      width:100px;
+      height: 15px;
+      width: 100px;
     }
 
     #map-side-panel {
@@ -112,7 +114,7 @@
       font-weight: bold;
       padding: 15px 0;
       height: auto;
-      font-size:large;
+      font-size: large;
     }
 
     #declarations {
@@ -120,13 +122,41 @@
       overflow: scroll;
     }
 
-    .mapboxgl-popup-content a {
-      text-decoration: underline;
-      color: blue;
+    .mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip {
+      border-bottom-color: #ababab;
     }
 
-    .mapboxgl-ctrl-attrib-button {
-      padding: inherit;
+    .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip {
+      border-top-color: #ababab;
+    }
+
+    .mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+      border-right-color: #ababab;
+    }
+
+    .mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+      border-left-color: #ababab;
+    }
+
+    .mapboxgl-popup-content {
+      border: 1px solid #ababab;
+    }
+
+    .mapboxgl-popup-content a {
+      text-decoration: underline;
+      color: rgb(0, 122, 192);
+      border: none;
+    }
+
+    .mapboxgl-ctrl-attrib-button,
+    .mapboxgl-popup-close-button,
+    .mapboxgl-popup-close-button:hover {
+      padding: revert;
+      color: inherit;
     }
   </style>
 </head>
@@ -276,7 +306,7 @@
             ["get", "iso_3166_1"]
           ]
         ]
-      },'~locations');
+      }, '~locations');
 
       buildLegend();
 
@@ -585,6 +615,8 @@
 
     function focusState(e) {
 
+      removeStatePopup()
+
       // If joined data exists
 
       if (e.features[0].state.hasOwnProperty('code')) {
@@ -614,30 +646,30 @@
           padding: 100
         })
 
-        // Populate map overlay
+        // Populate decalrations table
         const rows = filteredData.filter(d => statesLookup[d.State].boundary_id == e.features[0].id)
 
-        var description = '<table><tbody>';
-        rows.forEach(d => description += `<tr id="${d.id}" onmouseenter="onmouseenterTable(this)" data-lat="${d.Latitude}" data-lng="${d.Longitude}"><td>${d.Entity}</td><td><a href="${d["Link"]}" target="_blank">Link</td></tr>`)
-        description += '</table></tbody>';
-        document.getElementById('declarations').innerHTML = description;
+        var tableHTML = '<table onmouseleave="createLocationPopup()"><tbody>';
+        rows.forEach(d => tableHTML += `<tr id="${d.id}" onmouseenter="onmouseenterTable(this)" data-lat="${d.Latitude}" data-lng="${d.Longitude}"><td>${d.Entity}</td><td><a href="${d["Link"]}" target="_blank">Link</td></tr>`)
+        tableHTML += '</table></tbody>';
+        document.getElementById('declarations').innerHTML = tableHTML;
 
-
-
-      } else {
-        // document.getElementById('map-side-panel').innerHTML = 'No resolutions recorded in state';
       }
 
     }
+
+    
 
     function createLocationPopup(e) {
 
       if (declarationPopup) declarationPopup.remove()
 
-      declarationPopup = new mapboxgl.Popup()
+      if(e){
+        declarationPopup = new mapboxgl.Popup()
         .setLngLat(e.features[0].geometry.coordinates)
         .setHTML(locationPopupHTML(e.features[0]))
         .addTo(map);
+      }
 
     }
 
