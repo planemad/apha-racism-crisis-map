@@ -1,14 +1,14 @@
 <head>
   <script src="./states-data.js"></script>
 
-  <script src="https://api.mapbox.com/mapbox-gl-js/v2.0.0/mapbox-gl.js"></script>
-  <link href="https://api.mapbox.com/mapbox-gl-js/v2.0.0/mapbox-gl.css" rel="stylesheet" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.0.1/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.0.1/mapbox-gl.css" rel="stylesheet" />
   <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
-
-  <link href="app.css" rel="stylesheet" />
 
   <script src="https://unpkg.com/geojson@0.5.0/geojson.min.js"></script>
   <script src="https://d3js.org/d3.v6.min.js"></script>
+
+  <link href="app.css" rel="stylesheet" />
 
   <style>
     body {
@@ -23,25 +23,48 @@
     }
 
     section {
-      position: relative;
+      margin-top: 20px;
     }
 
 
     #map {
       height: 70vh;
-      width: 100%;
+      width: 70%;
+      float: right;
     }
 
     #map-filter {
-
-      z-index: 10;
-      padding: 10px;
+      background-color: #f2f0eb;
       color: grey;
-      background-color: aliceblue;
       width: 100%;
+      border-bottom: 1px solid #bbb39e;
+    }
+
+    #filter input:checked+label {
+      font-weight: bold;
+    }
+
+    #filter {
+      padding: 5px;
+    }
+
+    #subfilter {
+      background-color: #ffffff66;
+      padding: 5px;
+      min-height: 40px
+    }
+
+    #subfilter label {
+      color: grey;
+      font-size: small;
+      line-height: inherit;
+      font-style: italic;
+      border-right: 1px solid #cccccc;
+      padding-right: 5px;
     }
 
     .filter h6 {
+      margin: inherit;
       margin-right: 10px;
     }
 
@@ -57,18 +80,44 @@
 
     #map-overlay {
       position: absolute;
+      margin-left: 30%;
       top: 0;
-      left: 0;
-      z-index: 10;
-      padding: 10px;
-      color: grey;
-      background-color: rgba(240, 248, 255, 0.76);
+      padding: 5px;
+      background-color: rgba(255, 255, 255, 0.6);
+      width: 70%
+    }
+
+    #map-overlay div {
+      float: right;
+    }
+
+    #map-side-panel {
       width: 30%;
+      float: left;
+    }
+
+    #map-side-panel select {
+      margin: 0;
+      border: none;
+      background-color: white;
+      border-bottom: 2px solid;
+      font-weight: bold;
+      padding: 15px 0;
+      height: inherit;
+    }
+
+    #declarations {
+      max-height: 65vh;
+      overflow: scroll;
     }
 
     .mapboxgl-popup-content a {
       text-decoration: underline;
       color: blue;
+    }
+
+    .mapboxgl-ctrl-attrib-button {
+      padding: inherit;
     }
   </style>
 </head>
@@ -83,39 +132,47 @@
       by allocation of resources and strategic action.
     </p>
 
-    <h4>Map of declarations</h2>
+    <section>
 
-      <section>
+      <h4>Map of declarations</h2>
+
         <div class="legend">
         </div>
-        <div id="map"></div>
+
 
         <div id="map-filter">
           <div id="filter" class="filter">
           </div>
-          <hr>
           <div id="subfilter" class="filter">
           </div>
         </div>
 
-        <div id="map-overlay">
-          <div>
-            <label for="states">Select State:</label>
-
-            <select name="states" id="state">
-            </select>
+        <div style='position:relative'>
+          <div id="map"></div>
+          <div id="map-overlay" style="align-items: right">
+            <div id="identify"></div>
+            <div id="legend">
+            </div>
           </div>
 
-          <div id="declarations">
 
+          <div id="map-side-panel">
+            <div>
+              <select name="states" id="state" onchange="selectStateOption(this)">
+                <option value="All" selected="selected" disabled>Select state</option>
+              </select>
+            </div>
+
+            <div id="declarations">
+
+            </div>
           </div>
+          <div style="clear:both"></div>
         </div>
 
         </div>
 
-
-
-      </section>
+    </section>
 
 
   </article>
@@ -149,8 +206,9 @@
     let sheetId = "1eaU9tGMa7xwGGb6wpDP3T7w7Gw23NnLHGl4YoLILiHg";
     let sheetName = "All";
 
-    let sheetData = null;
-    filteredData = null;
+    let sheetData, geojson, filteredData;
+
+    let declarationPopup;
 
     //
     //  Map logic
@@ -208,33 +266,14 @@
         ]
       });
 
-      map.setPaintProperty("US-states-fill", "fill-color", [
-        "case",
-        [
-          "!=",
-          null,
-          ["feature-state", "count"]
-        ],
-        [
-          "interpolate",
-          ["linear"],
-          [
-            "feature-state",
-            "count"
-          ],
-          1,
-          "#feffc9",
-          30,
-          "#ff9700"
-        ],
-        "#efefef"
-      ])
+      buildLegend();
 
       // Location points
 
       map.addSource('locations', {
         type: 'geojson',
-        'data': null
+        data: null,
+        promoteId: 'id'
       });
 
       // Load spreadsheet
@@ -255,27 +294,32 @@
           // DEBUG
           // console.log(data)
 
+          // Add an id index to the data
+          data.forEach(function (part, index) {
+            this[index]['id'] = index;
+          }, data)
+
           sheetData = data;
 
           // Convert rows into a geojson and add as points
-          const geojson = GeoJSON.parse(data, {
+          geojson = GeoJSON.parse(data, {
             Point: ['Latitude', 'Longitude']
           });
 
           // Replace source in these style layers with the geojson
-          setLayerSource("~locations", "locations")
+          replaceLayerSource("~locations", "locations")
 
           map.getSource('locations').setData(geojson)
 
-          var bounds = turf.bbox(geojson);
+          const bounds = turf.bbox(geojson);
           map.fitBounds(bounds, {
             padding: 100
           });
 
-          document.getElementById('filter').insertAdjacentHTML('beforeend', '<h6>Explore by institution type:</h6>');
+          document.getElementById('filter').insertAdjacentHTML('beforeend', '<h6>Type of declaring entity:</h6>');
 
           // Aggregate rows by type
-          var typesData = d3.group(data, d => d.Type)
+          const typesData = d3.group(data, d => d.Type)
 
           const radio =
             `<input checked type="radio" id="All" name="filter" value="All" onchange="updateSubfilters()"><label for="All">All levels (${data.length})</label>`
@@ -301,14 +345,14 @@
 
     function updateSubfilters() {
 
-      let category = document.querySelector('input[name="filter"]:checked').value;
+      const category = document.querySelector('input[name="filter"]:checked').value;
 
-      let categoryTypeData = sheetData.filter(d => category == "All" ? true : d.Type == category)
+      const categoryTypeData = sheetData.filter(d => category == "All" ? true : d.Type == category)
 
       document.getElementById('subfilter').innerHTML = ``
 
       // Aggregate rows by subtype
-      var subTypesData = d3.group(categoryTypeData, d => d["Sub-Type"])
+      const subTypesData = d3.group(categoryTypeData, d => d["Sub-Type"])
       subTypesData.forEach((d, i) => {
         const checkbox =
           `<input checked type="checkbox" id="${i}" name="subfilter" value="${i}" onchange="filterData()"><label for="${i}">${i} (${d.length})</label>`
@@ -323,13 +367,13 @@
     function filterData() {
 
       // Get the current filter values
-      let type = document.querySelector('input[name="filter"]:checked').value;
+      const type = document.querySelector('input[name="filter"]:checked').value;
       let subtypes = [];
       document.querySelectorAll('input[name="subfilter"]:checked').forEach(d => subtypes.push(d.value))
 
       subtypes = subtypes.length ? subtypes : ["None"]
 
-      let layerFilter = ["all",
+      const layerFilter = ["all",
         [
           "match",
           ["get", "Type"],
@@ -346,7 +390,7 @@
         ]
       ]
 
-      let layerOpacity = [
+      const layerOpacity = [
         "case",
         layerFilter,
         1,
@@ -356,7 +400,7 @@
       map.setPaintProperty("locations", "circle-opacity", layerOpacity)
 
 
-      let layerSortkey = [
+      const layerSortkey = [
         "case",
         ["all", [
           "match",
@@ -387,15 +431,26 @@
       filteredData = sheetData.filter(d => (type == "All" || d.Type == type) && subtypes.indexOf(d["Sub-Type"]) > -1)
 
       // Aggregate rows by state and join to boundaries
-      var statesData = d3.group(filteredData, d => d.State)
+      const statesData = d3.group(filteredData, d => d.State)
 
       map.removeFeatureState({
         'source': 'composite',
         'sourceLayer': 'boundaries_admin_1'
       });
 
+      // Rebuild the states dropdown
+
+      const stateDropdown = document.getElementById("state")
+      stateDropdown.innerHTML = `<option value="All" selected="selected" disabled>Select state</option>`;
+      document.getElementById("declarations").innerHTML = ''
+
       // Iterate over entries for each state
       statesData.forEach((d, i) => {
+
+        const stateOption = document.createElement("option");
+        stateOption.text = `${statesLookup[i].name} (${d.length})`;
+        stateOption.value = statesLookup[i].code;
+        stateDropdown.add(stateOption);
 
         map.setFeatureState({
           'source': 'composite',
@@ -409,6 +464,38 @@
 
       })
 
+    }
+
+    function selectStateOption(input) {
+
+      focusState({
+        features: [{
+          id: statesLookup[input.value].boundary_id,
+          state: {
+            code: statesLookup[input.value].code
+          }
+        }]
+      })
+
+    }
+
+    function onmouseenterTable(row) {
+
+      map.easeTo({
+        center: [parseFloat(row.dataset.lng), parseFloat(row.dataset.lat)]
+      })
+
+      const features = geojson.features.filter(feature => feature.properties.id == parseInt(row.id))
+      createLocationPopup({ features: features })
+
+    }
+
+    function buildLegend() {
+
+      const fillStyle = map.getPaintProperty("US-states-fill", "fill-color")[2]
+      const colors = [fillStyle[4], fillStyle[6]]
+      const range = [fillStyle[3], fillStyle[5]]
+      document.getElementById('legend').innerHTML = `States colored by declaration count: ${range[0]}<span style="background: linear-gradient(90deg, ${colors[0]} 0%, ${colors[1]} 100%);width:100px;height:10px;display:inline-block;margin:0 10px"></span>${range[1]}`
     }
 
     //
@@ -426,27 +513,27 @@
 
     }
 
-    var hoverId = null;
+    let hoverBoundaryId = null;
 
     function createStatePopup(e) {
 
       map.getCanvas().style.cursor = 'pointer';
 
       if (e.features.length > 0) {
-        if (hoverId) {
+        if (hoverBoundaryId) {
           map.setFeatureState({
             'source': 'composite',
             'sourceLayer': 'boundaries_admin_1',
-            id: hoverId
+            id: hoverBoundaryId
           }, {
             hover: false
           });
         }
-        hoverId = e.features[0].id;
+        hoverBoundaryId = e.features[0].id;
         map.setFeatureState({
           'source': 'composite',
           'sourceLayer': 'boundaries_admin_1',
-          id: hoverId
+          id: hoverBoundaryId
         }, {
           hover: true
         });
@@ -455,59 +542,61 @@
       // Populate the popup and set its coordinates
       // based on the feature found.
       if (statePopupHTML(e.features[0]) !== "none") {
-
-        document.getElementById('declarations').innerHTML = statePopupHTML(e.features[0]);
+        document.getElementById('identify').innerHTML = statePopupHTML(e.features[0]);
+        document.getElementById('legend').style.visibility = "hidden"
 
       } else {
-        document.getElementById('declarations').innerHTML = "No declarations in state"
+        document.getElementById('identify').innerHTML = ""
+        document.getElementById('legend').style.visibility = "visible"
       }
     }
 
     function removeStatePopup() {
       map.getCanvas().style.cursor = '';
+      document.getElementById('identify').innerHTML = ""
+      document.getElementById('legend').style.visibility = "visible"
 
-      if (hoverId) {
+      if (hoverBoundaryId) {
         map.setFeatureState({
           'source': 'composite',
           'sourceLayer': 'boundaries_admin_1',
-          id: hoverId
+          id: hoverBoundaryId
         }, {
           hover: false
         });
       }
-      hoverId = null;
+      hoverBoundaryId = null;
 
     }
 
-    var focusId = null;
+    let focusBoundaryId = null;
 
     function focusState(e) {
 
-      if (e.features.length > 0) {
+      // If joined data exists
 
-        if (focusId) {
+      if (e.features[0].state.hasOwnProperty('code')) {
+
+        if (focusBoundaryId) {
           map.setFeatureState({
             'source': 'composite',
             'sourceLayer': 'boundaries_admin_1',
-            id: focusId
+            id: focusBoundaryId
           }, {
             focus: false
           });
         }
-        focusId = e.features[0].id;
+        focusBoundaryId = e.features[0].id;
         map.setFeatureState({
           'source': 'composite',
           'sourceLayer': 'boundaries_admin_1',
-          id: focusId
+          id: focusBoundaryId
         }, {
           focus: true
         });
-      }
 
-      // If joined data exists
-      if (e.features[0].state.hasOwnProperty('code')) {
-
-        console.log(e.features)
+        const stateDropdown = document.getElementById('state');
+        stateDropdown.value = e.features[0].state.code;
 
         map.fitBounds(statesLookup[e.features[0].state.code].bounds, {
           padding: 20
@@ -516,30 +605,24 @@
         // Populate map overlay
         const rows = filteredData.filter(d => statesLookup[d.State].boundary_id == e.features[0].id)
 
-        var description = `<b>${e.features[0].state.name}</b>`;
-        description += '<ul>';
-        rows.forEach(d => description += `<li>${d["Date of Declaration"]} - ${d.Entity}</li>`)
-        description += '</ul>';
+        var description = '<table><tbody>';
+        rows.forEach(d => description += `<tr id="${d.id}" onmouseenter="onmouseenterTable(this)" data-lat="${d.Latitude}" data-lng="${d.Longitude}"><td>${d.Entity}</td><td><a href="${d["Link"]}" target="_blank">Link</td></tr>`)
+        description += '</table></tbody>';
         document.getElementById('declarations').innerHTML = description;
 
+
+
       } else {
-        // document.getElementById('map-overlay').innerHTML = 'No resolutions recorded in state';
+        // document.getElementById('map-side-panel').innerHTML = 'No resolutions recorded in state';
       }
 
     }
 
     function createLocationPopup(e) {
 
-      var coordinates = e.lngLat;
+      if (declarationPopup) declarationPopup.remove()
 
-      // Ensure that if the map is zoomed out such that
-      // multiple copies of the feature are visible, the
-      // popup appears over the copy being pointed to.
-      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-      }
-
-      new mapboxgl.Popup()
+      declarationPopup = new mapboxgl.Popup()
         .setLngLat(e.features[0].geometry.coordinates)
         .setHTML(locationPopupHTML(e.features[0]))
         .addTo(map);
@@ -553,8 +636,8 @@
       if (feature.state.hasOwnProperty('name')) {
 
 
-        description = `<b>${feature.state.name}</b>`;
-        description += `<p><b>${feature.state.count}</b> declarations</p>`;
+        description = `<b>${feature.state.name}</b>: `;
+        description += `${feature.state.count} declarations`;
       } else {
         description = 'none'
       }
@@ -586,7 +669,7 @@
     }
 
     // Set layer source
-    function setLayerSource(layerId, sourceId) {
+    function replaceLayerSource(layerId, sourceId) {
 
       let styleLayers = map.getStyle().layers;
 
@@ -630,7 +713,7 @@
     }
 
 
-    buildStateDropdown()
+    // buildStateDropdown()
 
   </script>
 
