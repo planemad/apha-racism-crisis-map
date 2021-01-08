@@ -29,7 +29,7 @@
 
     #map {
       height: 70vh;
-      width: 70%;
+      width: 100%;
       float: right;
       border-left: 1px solid #bbb39e;
     }
@@ -103,7 +103,9 @@
 
     #map-side-panel {
       width: 30%;
-      float: left;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
 
     #map-side-panel select {
@@ -115,6 +117,23 @@
       padding: 15px 0;
       height: auto;
       font-size: large;
+    }
+
+    #map-side-panel .collapse {
+      position: absolute;
+      top: 70px;
+      right: -20px;
+      padding: 5px;
+      background-color: #f1f1f1;
+      border: 1px solid black;
+      border-left: 0;
+      border-radius: 0 5px 5px 0;
+      display: none;
+      cursor: pointer;
+    }
+
+    #map-side-panel .collapse:hover {
+      background-color: #d6d4d4;
     }
 
     #declarations {
@@ -182,24 +201,26 @@
           </div>
         </div>
 
-        <div style='position:relative'>
+        <div id="map-viewport" style='position:relative'>
+
           <div id="map"></div>
+
           <div id="map-overlay" style="align-items: right">
-            <span id="identify"></span>
-            <span id="legend">
-            </span>
+            <span id="map-context"></span>
+            <span id="legend"></span>
           </div>
 
 
           <div id="map-side-panel">
+
             <div>
               <select name="states" id="state" onchange="selectStateOption(this)">
                 <option value="All" selected="selected" disabled>Select state</option>
               </select>
             </div>
 
+            <div class="collapse">&laquo;</div>
             <div id="declarations">
-
             </div>
           </div>
           <div style="clear:both"></div>
@@ -540,6 +561,35 @@
       document.getElementById('legend').innerHTML = `States colored by declaration count: ${range[0]}<span style="background: linear-gradient(90deg, ${colors[0]} 0%, ${colors[1]} 100%)"></span>${range[1]}`
     }
 
+
+    document.getElementById("map-side-panel").onmouseover = function () {
+      toggleSidePanel(true)
+    }
+
+    document.querySelector('#map-side-panel .collapse').onclick = function () {
+      toggleSidePanel(false)
+    }
+
+    function toggleSidePanel(open) {
+
+
+      if (open && document.getElementById('declarations').childNodes.length) {
+        document.querySelector('#map-side-panel .collapse').style.display = 'block';
+        document.getElementById('declarations').style.height = 'auto';
+        document.getElementById('map').style.width = '70%';
+
+        map.resize();
+
+      } else {
+        document.querySelector('#map-side-panel .collapse').style.display = 'none'
+        document.getElementById('declarations').style.height = '0';
+        document.getElementById('map').style.width = '100%';
+        map.resize();
+      }
+
+
+    }
+
     //
     // Map Interactions
     //
@@ -584,18 +634,18 @@
       // Populate the popup and set its coordinates
       // based on the feature found.
       if (statePopupHTML(e.features[0]) !== "none") {
-        document.getElementById('identify').innerHTML = statePopupHTML(e.features[0]);
+        document.getElementById('map-context').innerHTML = statePopupHTML(e.features[0]);
         document.getElementById('legend').style.display = "none"
 
       } else {
-        document.getElementById('identify').innerHTML = ""
+        document.getElementById('map-context').innerHTML = ""
         document.getElementById('legend').style.display = ""
       }
     }
 
     function removeStatePopup() {
       map.getCanvas().style.cursor = '';
-      document.getElementById('identify').innerHTML = ""
+      document.getElementById('map-context').innerHTML = ""
       document.getElementById('legend').style.display = ""
 
       if (hoverBoundaryId) {
@@ -654,21 +704,23 @@
         tableHTML += '</table></tbody>';
         document.getElementById('declarations').innerHTML = tableHTML;
 
+        toggleSidePanel(true)
+
       }
 
     }
 
-    
+
 
     function createLocationPopup(e) {
 
       if (declarationPopup) declarationPopup.remove()
 
-      if(e){
+      if (e) {
         declarationPopup = new mapboxgl.Popup()
-        .setLngLat(e.features[0].geometry.coordinates)
-        .setHTML(locationPopupHTML(e.features[0]))
-        .addTo(map);
+          .setLngLat(e.features[0].geometry.coordinates)
+          .setHTML(locationPopupHTML(e.features[0]))
+          .addTo(map);
       }
 
     }
