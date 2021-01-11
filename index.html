@@ -558,7 +558,7 @@
       const fillStyle = map.getPaintProperty("US-states-fill", "fill-color")[2]
       const colors = [fillStyle[4], fillStyle[6]]
       const range = [fillStyle[3], fillStyle[5]]
-      document.getElementById('legend').innerHTML = `States colored by declaration count: ${range[0]}<span style="background: linear-gradient(90deg, ${colors[0]} 0%, ${colors[1]} 100%)"></span>>${range[1]}`
+      document.getElementById('legend').innerHTML = `States colored by declaration count: ${range[0]}<span style="background: linear-gradient(90deg, ${colors[0]} 0%, ${colors[1]} 100%)"></span>${range[1]}+`
     }
 
 
