@@ -577,10 +577,12 @@
         document.querySelector('#map-side-panel .collapse').style.display = 'block';
         document.getElementById('declarations').style.height = 'auto';
         document.getElementById('map').style.width = '70%';
+        map.resize()
       } else {
         document.querySelector('#map-side-panel .collapse').style.display = 'none'
         document.getElementById('declarations').style.height = '0';
         document.getElementById('map').style.width = '100%';
+        map.resize()
         // map.easeTo({
         //   padding: 0,
         //   duration: 1000
@@ -693,7 +695,7 @@
         stateDropdown.value = e.features[0].state.code;
 
         map.fitBounds(statesLookup[e.features[0].state.code].bounds, {
-          padding: 50
+          padding: 100
         })
 
         // Populate decalrations table
