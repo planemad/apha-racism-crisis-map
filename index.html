@@ -144,25 +144,25 @@
     .mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
     .mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip,
     .mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip {
-      border-bottom-color: #ababab;
+      border-bottom-color: #444;
     }
 
     .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
     .mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
     .mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip {
-      border-top-color: #ababab;
+      border-top-color: #444;
     }
 
     .mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
-      border-right-color: #ababab;
+      border-right-color: #444;
     }
 
     .mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
-      border-left-color: #ababab;
+      border-left-color: #444;
     }
 
     .mapboxgl-popup-content {
-      border: 1px solid #ababab;
+      border: 1px solid #444;
     }
 
     .mapboxgl-popup-content a {
@@ -577,14 +577,14 @@
         document.querySelector('#map-side-panel .collapse').style.display = 'block';
         document.getElementById('declarations').style.height = 'auto';
         document.getElementById('map').style.width = '70%';
-
-        map.resize();
-
       } else {
         document.querySelector('#map-side-panel .collapse').style.display = 'none'
         document.getElementById('declarations').style.height = '0';
         document.getElementById('map').style.width = '100%';
-        map.resize();
+        // map.easeTo({
+        //   padding: 0,
+        //   duration: 1000
+        // });
       }
 
 
@@ -693,7 +693,7 @@
         stateDropdown.value = e.features[0].state.code;
 
         map.fitBounds(statesLookup[e.features[0].state.code].bounds, {
-          padding: 100
+          padding: 50
         })
 
         // Populate decalrations table
